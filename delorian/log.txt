@@ -1,2 +1,0 @@
-ERROR[17:26:12] ERROR #10 DIALER, exit code 1 | error starting game: start game minecraft [::]:19132->127.0.0.1:54103: context canceled
-nceled
