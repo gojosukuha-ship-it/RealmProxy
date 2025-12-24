@@ -278,7 +278,7 @@ func files() {
 		}
 	}
 	readme := "reamproxy/readme.txt"
-	readmeContent := "Version: 1.21.111 | Run this command on powershell: CheckNetIsolation LoopbackExempt -a -n='Microsoft.MinecraftUWP_8wekyb3d8bbwe'\n"
+	readmeContent := "Version: 1.21.130 | Run this command on powershell: CheckNetIsolation LoopbackExempt -a -n='Microsoft.MinecraftUWP_8wekyb3d8bbwe'\n"
 	if _, err := os.Stat(readme); os.IsNotExist(err) {
 		if err := os.WriteFile(readme, []byte(readmeContent), 0644); err != nil {
 			Errorf("ERROR #2 OS, exit code 1 | error writing file %s: , %v", readme, err)
@@ -329,4 +329,3 @@ func tokenSrc() oauth2.TokenSource {
 	}()
 	return src
 }
-
