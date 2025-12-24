@@ -20,15 +20,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/auth"
-	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/realms"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"golang.org/x/oauth2"
 )
 
 const (
-	DefaultCacheDir = "delorian/cache"
+	DownloadPath = "realmproxy/cache"
 )
 
 type Config struct {
@@ -179,7 +177,7 @@ func handleConnection(conn net.Conn, realmAddress string, src oauth2.TokenSource
 	}
 	dial.DownloadResourcePack = func(id uuid.UUID, version string, _, _ int) bool {
 		name := fmt.Sprintf("%s_%s", id, version)
-		path := filepath.Join(DefaultCacheDir, name+".mcpack")
+		path := filepath.Join(DownloadPath, name+".mcpack")
 		_, err := os.Stat(path)
 		if err == nil {
 			return false
@@ -197,19 +195,8 @@ func handleConnection(conn net.Conn, realmAddress string, src oauth2.TokenSource
 			Errorf("ERROR #6 DIALER, exit code 1 | error reading resource pack data: %v", err)
 			continue
 		}
-
-		name := fmt.Sprintf("%s_%s", pack.UUID(), pack.Version())
 		packName := sanitizeFilename(pack.Name())
-		downloadPath := filepath.Join(DefaultCacheDir, packName+".mcpack")
-		cachePath := filepath.Join(DefaultCacheDir, name+".mcpack")
-
-		_, err = os.Stat(downloadPath)
-		if err == nil {
-
-		} else if os.IsNotExist(err) {
-		} else {
-			Errorf("ERROR #7 DIALER, exit code 1 | error checking download path %v", err)
-		}
+		cachePath := filepath.Join(DownloadPath, packName+".mcpack")
 		_, err = os.Stat(cachePath)
 		if err == nil {
 		} else if os.IsNotExist(err) {
@@ -218,13 +205,12 @@ func handleConnection(conn net.Conn, realmAddress string, src oauth2.TokenSource
 			if err != nil {
 				Errorf("ERROR #8 DIALER, exit code 1 | error writing resource pack to cache: %v", err)
 			} else {
-				Debugf("pack cached: %s", name)
+				Debugf("pack cached: %s", packName)
 			}
 		} else {
 			Errorf("ERROR #8 DIALER, exit code 1 | error checking cache path: %v", err)
 		}
 	}
-	var gd = clientConn.GameData()
 	serverConn, err := dial.DialContext(ctx, "raknet", realmAddress)
 	if err != nil {
 		Errorf("ERROR #9 DIALER, exit code 1 | could not connect to Realm for client %s: %v", clientConn.RemoteAddr(), err)
@@ -237,11 +223,6 @@ func handleConnection(conn net.Conn, realmAddress string, src oauth2.TokenSource
 		if err := clientConn.StartGame(serverConn.GameData()); err != nil {
 			Errorf("ERROR #10 DIALER, exit code 1 | error starting game: %v", err)
 		}
-		Info("Client connected successfully")
-		clientConn.WritePacket(&packet.Text{
-			Message:  "§bRealm Proxy",
-			TextType: packet.TextTypeChat,
-		})
 		g.Done()
 	}()
 	go func() {
@@ -288,7 +269,7 @@ func handleConnection(conn net.Conn, realmAddress string, src oauth2.TokenSource
 	}()
 }
 func files() {
-	dirs := []string{"delorian", "delorian/cache"}
+	dirs := []string{"realmproxy", "realmproxy/cache"}
 	for _, dir := range dirs {
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			if err := os.Mkdir(dir, 0755); err != nil {
@@ -296,7 +277,7 @@ func files() {
 			}
 		}
 	}
-	readme := "delorian/readme.txt"
+	readme := "reamproxy/readme.txt"
 	readmeContent := "Version: 1.21.111 | Run this command on powershell: CheckNetIsolation LoopbackExempt -a -n='Microsoft.MinecraftUWP_8wekyb3d8bbwe'\n"
 	if _, err := os.Stat(readme); os.IsNotExist(err) {
 		if err := os.WriteFile(readme, []byte(readmeContent), 0644); err != nil {
@@ -349,11 +330,3 @@ func tokenSrc() oauth2.TokenSource {
 	return src
 }
 
-type noopHandler struct{}
-
-func (h *noopHandler) HandleClientPacket(pk packet.Packet, conn *minecraft.Conn) (handled bool) {
-	return false
-}
-func (h *noopHandler) HandleServerPacket(pk packet.Packet, conn *minecraft.Conn) (handled bool) {
-	return false
-}
